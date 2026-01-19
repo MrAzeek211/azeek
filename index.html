@@ -127,11 +127,12 @@ function simpan(){
 
 function edit(i){
   const d=data[i];
-  editIndex.value=i;
-  pasalInput.value=d.pasal;
-  deskInput.value=d.deskripsi;
-  dendaInput.value=d.denda;
-  hukumanInput.value=d.hukuman;
+  if(!d) return alert('Data tidak ditemukan');
+  document.getElementById('editIndex').value=i;
+  document.getElementById('pasalInput').value=d.pasal;
+  document.getElementById('deskInput').value=d.deskripsi;
+  document.getElementById('dendaInput').value=d.denda;
+  document.getElementById('hukumanInput').value=d.hukuman;
 }
 
 function hapus(i){ if(confirm('Hapus pasal ini?')){ data.splice(i,1); render(); hitung(); }}
@@ -141,10 +142,15 @@ function importCSV(){
   if(!file) return alert('Pilih file CSV terlebih dahulu');
   const reader=new FileReader();
   reader.onload=e=>{
-    const lines=e.target.result.split(/\r?\n/);
+    const lines=e.target.result.split(/
+?
+/);
     data=[];
-    for(let i=1;i<lines.length;i++){
+    for(let i=0;i<lines.length;i++){
+      if(!lines[i].trim()) continue;
       const c=lines[i].split(',');
+      // Skip header CSV
+      if(c[0].toUpperCase().includes('PASAL')) continue;
       if(c.length<4) continue;
       data.push({
         pasal:c[0].trim(),
@@ -153,7 +159,8 @@ function importCSV(){
         hukuman:parseInt(c[3].replace(/[^0-9]/g,''))||0
       });
     }
-    render();alert('Import CSV berhasil');
+    render();
+    alert('Import CSV berhasil');
   };
   reader.readAsText(file);
 }
