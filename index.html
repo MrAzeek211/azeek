@@ -3,18 +3,49 @@
 <head>
   <meta charset="UTF-8">
   <title>UU Nasional Azeek</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { font-family: Arial; background:#f5f5f5; padding:20px }
-    table { width:100%; border-collapse: collapse; background:white }
-    th, td { border:1px solid #ddd; padding:8px }
-    th { background:#222; color:white }
-    button { padding:4px 8px; cursor:pointer }
-    input { width:100%; margin:4px 0 }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    input, button {
+      padding: 8px;
+      margin: 5px 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    th {
+      background: #222;
+      color: white;
+    }
+    button {
+      cursor: pointer;
+    }
+    .aksi button {
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
 
-<h2>UU Nasional Azeek</h2>
+<h1>UU Nasional Azeek</h1>
+
+<h3>Import CSV</h3>
 <input type="file" id="csvInput" accept=".csv">
 
 <h3>Form Pasal</h3>
@@ -22,100 +53,116 @@
 <input id="keterangan" placeholder="Keterangan">
 <input id="hukuman" type="number" placeholder="Hukuman (bulan)">
 <input id="denda" type="number" placeholder="Denda">
-<button onclick="simpan()">Simpan</button>
+<button id="simpanBtn">Simpan</button>
 
-<h3>Daftar Pasal</h3>
 <table>
-<thead>
-<tr>
-<th>Pasal</th><th>Keterangan</th><th>Hukuman</th><th>Denda</th><th>Aksi</th>
-</tr>
-</thead>
-<tbody id="tbody"></tbody>
+  <thead>
+    <tr>
+      <th>Pasal</th>
+      <th>Keterangan</th>
+      <th>Hukuman</th>
+      <th>Denda</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
+  <tbody id="tbody"></tbody>
 </table>
 
 <script>
-let data = [];
-let editIndex = null;
+  let data = [];
+  let editIndex = null;
 
-// IMPORT CSV
-csvInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  const reader = new FileReader();
+  const csvInput = document.getElementById("csvInput");
+  const tbody = document.getElementById("tbody");
 
-  reader.onload = () => {
-    const lines = reader.result.split('\n').slice(1);
-    data = [];
+  csvInput.addEventListener("change", function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    lines.forEach(l => {
-      const [pasal,keterangan,hukuman,denda] = l.split(',');
-      if (!pasal) return;
-      data.push({
-        pasal: pasal.trim(),
-        keterangan: keterangan.trim(),
-        hukuman: hukuman.trim(),
-        denda: denda.trim()
-      });
-    });
+    const reader = new FileReader();
+    reader.onload = function () {
+      const lines = reader.result.split(/\r?\n/);
+      data = [];
 
-    render();
-  };
-  reader.readAsText(file);
-});
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
 
-function render() {
-  tbody.innerHTML = '';
-  data.forEach((r,i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${r.pasal}</td>
-      <td>${r.keterangan}</td>
-      <td>${r.hukuman}</td>
-      <td>${r.denda}</td>
-      <td>
-        <button class="edit">Edit</button>
-        <button class="hapus">Hapus</button>
-      </td>`;
+        const parts = line.split(",");
+        if (parts.length < 4) continue;
 
-    tr.querySelector('.edit').addEventListener('click', () => edit(i));
-    tr.querySelector('.hapus').addEventListener('click', () => hapus(i));
-
-    tbody.appendChild(tr);
+        data.push({
+          pasal: parts[0].trim(),
+          keterangan: parts[1].trim(),
+          hukuman: parts[2].trim(),
+          denda: parts[3].trim()
+        });
+      }
+      renderTable();
+    };
+    reader.readAsText(file);
   });
-}
 
-function edit(i) {
-  const r = data[i];
-  pasal.value = r.pasal;
-  keterangan.value = r.keterangan;
-  hukuman.value = r.hukuman;
-  denda.value = r.denda;
-  editIndex = i;
-}
+  function renderTable() {
+    tbody.innerHTML = "";
+    data.forEach((row, index) => {
+      const tr = document.createElement("tr");
 
-function hapus(i) {
-  data.splice(i,1);
-  render();
-}
+      tr.innerHTML = `
+        <td>${row.pasal}</td>
+        <td>${row.keterangan}</td>
+        <td>${row.hukuman}</td>
+        <td>${row.denda}</td>
+        <td class="aksi">
+          <button class="edit">Edit</button>
+          <button class="hapus">Hapus</button>
+        </td>
+      `;
 
-function simpan() {
-  const obj = {
-    pasal: pasal.value,
-    keterangan: keterangan.value,
-    hukuman: hukuman.value,
-    denda: denda.value
-  };
+      tr.querySelector(".edit").addEventListener("click", () => editData(index));
+      tr.querySelector(".hapus").addEventListener("click", () => hapusData(index));
 
-  if (editIndex !== null) {
-    data[editIndex] = obj;
-    editIndex = null;
-  } else {
-    data.push(obj);
+      tbody.appendChild(tr);
+    });
   }
 
-  pasal.value = keterangan.value = hukuman.value = denda.value = '';
-  render();
-}
+  function editData(index) {
+    const r = data[index];
+    document.getElementById("pasal").value = r.pasal;
+    document.getElementById("keterangan").value = r.keterangan;
+    document.getElementById("hukuman").value = r.hukuman;
+    document.getElementById("denda").value = r.denda;
+    editIndex = index;
+  }
+
+  function hapusData(index) {
+    data.splice(index, 1);
+    renderTable();
+  }
+
+  document.getElementById("simpanBtn").addEventListener("click", function () {
+    const obj = {
+      pasal: pasal.value,
+      keterangan: keterangan.value,
+      hukuman: hukuman.value,
+      denda: denda.value
+    };
+
+    if (editIndex !== null) {
+      data[editIndex] = obj;
+      editIndex = null;
+    } else {
+      data.push(obj);
+    }
+
+    pasal.value = "";
+    keterangan.value = "";
+    hukuman.value = "";
+    denda.value = "";
+
+    renderTable();
+  });
 </script>
+
 </body>
 </html>
