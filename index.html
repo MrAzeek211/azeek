@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>UU Nasional Azeek</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .box {
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 6px;
+      max-width: 900px;
+      margin: auto;
+    }
+    input, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      box-sizing: border-box;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+    }
+    th {
+      background: #222;
+      color: white;
+    }
+    button {
+      cursor: pointer;
+    }
+    .aksi button {
+      width: auto;
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <h1>UU Nasional Azeek</h1>
+
+  <p><b>Jika kamu melihat halaman ini, berarti GitHub Pages SUDAH BENAR.</b></p>
+
+  <hr>
+
+  <h3>Import CSV</h3>
+  <input type="file" id="csvInput" accept=".csv">
+
+  <hr>
+
+  <h3>Form Pasal</h3>
+  <input id="pasal" placeholder="Pasal">
+  <input id="keterangan" placeholder="Keterangan">
+  <input id="hukuman" type="number" placeholder="Hukuman (bulan)">
+  <input id="denda" type="number" placeholder="Denda">
+  <button id="simpan">Simpan</button>
+
+  <hr>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pasal</th>
+        <th>Keterangan</th>
+        <th>Hukuman</th>
+        <th>Denda</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  let data = [];
+  let editIndex = null;
+
+  const tbody = document.getElementById("tbody");
+  const csvInput = document.getElementById("csvInput");
+
+  csvInput.addEventListener("change", function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function() {
+      const lines = reader.result.split(/\r?\n/);
+      data = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i]) continue;
+        const p = lines[i].split(",");
+        if (p.length < 4) continue;
+
+        data.push({
+          pasal: p[0].trim(),
+          keterangan: p[1].trim(),
+          hukuman: p[2].trim(),
+          denda: p[3].trim()
+        });
+      }
+      render();
+    };
+    reader.readAsText(file);
+  });
+
+  function render() {
+    tbody.innerHTML = "";
+    data.forEach((r, i) => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td>${r.pasal}</td>
+        <td>${r.keterangan}</td>
+        <td>${r.hukuman}</td>
+        <td>${r.denda}</td>
+        <td class="aksi">
+          <button>Edit</button>
+          <button>Hapus</button>
+        </td>
+      `;
+
+      tr.children[4].children[0].onclick = () => edit(i);
+      tr.children[4].children[1].onclick = () => hapus(i);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function edit(i) {
+    const r = data[i];
+    pasal.value = r.pasal;
+    keterangan.value = r.keterangan;
+    hukuman.value = r.hukuman;
+    denda.value = r.denda;
+    editIndex = i;
+  }
+
+  function hapus(i) {
+    data.splice(i, 1);
+    render();
+  }
+
+  document.getElementById("simpan").onclick = function() {
+    const obj = {
+      pasal: pasal.value,
+      keterangan: keterangan.value,
+      hukuman: hukuman.value,
+      denda: denda.value
+    };
+
+    if (editIndex !== null) {
+      data[editIndex] = obj;
+      editIndex = null;
+    } else {
+      data.push(obj);
+    }
+
+    pasal.value = "";
+    keterangan.value = "";
+    hukuman.value = "";
+    denda.value = "";
+
+    render();
+  };
+</script>
+
+</body>
+</html>
