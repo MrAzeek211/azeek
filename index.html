@@ -125,14 +125,20 @@ function simpan(){
   render();
 }
 
-function edit(i){
-  const d=data[i];
-  if(!d) return alert('Data tidak ditemukan');
-  document.getElementById('editIndex').value=i;
-  document.getElementById('pasalInput').value=d.pasal;
-  document.getElementById('deskInput').value=d.deskripsi;
-  document.getElementById('dendaInput').value=d.denda;
-  document.getElementById('hukumanInput').value=d.hukuman;
+function edit(index) {
+  if (index === undefined || data[index] === undefined) {
+    alert('Data tidak ditemukan');
+    return;
+  }
+
+  const row = data[index];
+
+  document.getElementById('pasal').value = row.pasal || '';
+  document.getElementById('keterangan').value = row.keterangan || '';
+  document.getElementById('hukuman').value = row.hukuman || '';
+  document.getElementById('denda').value = row.denda || '';
+
+  editIndex = index;
 }
 
 function hapus(i){ if(confirm('Hapus pasal ini?')){ data.splice(i,1); render(); hitung(); }}
