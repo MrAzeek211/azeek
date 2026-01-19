@@ -72,8 +72,8 @@ csvInput.addEventListener("change", e => {
       data.push({
         pasal:p[0].trim(),
         keterangan:p[1].trim(),
-        hukuman:Number(p[2]),
-        denda:Number(p[3]),
+        hukuman: parseInt(p[2].replace(/[^0-9]/g, '')) || 0,
+        denda: parseInt(p[3].replace(/[^0-9]/g, '')) || 0,
         pilih:false
       });
     }
