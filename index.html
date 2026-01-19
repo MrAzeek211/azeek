@@ -1,85 +1,120 @@
 <!DOCTYPE html>
-const lines = reader.result.split('\n').slice(1);
-data = [];
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>UU Nasional Azeek</title>
+  <style>
+    body { font-family: Arial; background:#f5f5f5; padding:20px }
+    table { width:100%; border-collapse: collapse; background:white }
+    th, td { border:1px solid #ddd; padding:8px }
+    th { background:#222; color:white }
+    button { padding:4px 8px; cursor:pointer }
+    input { width:100%; margin:4px 0 }
+  </style>
+</head>
+<body>
 
+<h2>UU Nasional Azeek</h2>
+<input type="file" id="csvInput" accept=".csv">
 
-lines.forEach(l => {
-const [pasal,keterangan,hukuman,denda] = l.split(',');
-if (!pasal) return;
-data.push({
-pasal: pasal.trim(),
-keterangan: keterangan.trim(),
-hukuman: hukuman.trim(),
-denda: denda.trim()
+<h3>Form Pasal</h3>
+<input id="pasal" placeholder="Pasal">
+<input id="keterangan" placeholder="Keterangan">
+<input id="hukuman" type="number" placeholder="Hukuman (bulan)">
+<input id="denda" type="number" placeholder="Denda">
+<button onclick="simpan()">Simpan</button>
+
+<h3>Daftar Pasal</h3>
+<table>
+<thead>
+<tr>
+<th>Pasal</th><th>Keterangan</th><th>Hukuman</th><th>Denda</th><th>Aksi</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<script>
+let data = [];
+let editIndex = null;
+
+// IMPORT CSV
+csvInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onload = () => {
+    const lines = reader.result.split('\n').slice(1);
+    data = [];
+
+    lines.forEach(l => {
+      const [pasal,keterangan,hukuman,denda] = l.split(',');
+      if (!pasal) return;
+      data.push({
+        pasal: pasal.trim(),
+        keterangan: keterangan.trim(),
+        hukuman: hukuman.trim(),
+        denda: denda.trim()
+      });
+    });
+
+    render();
+  };
+  reader.readAsText(file);
 });
-});
-
-
-render();
-};
-reader.readAsText(file);
-});
-
 
 function render() {
-tbody.innerHTML = '';
-data.forEach((r,i) => {
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td>${r.pasal}</td>
-<td>${r.keterangan}</td>
-<td>${r.hukuman}</td>
-<td>${r.denda}</td>
-<td>
-<button class="edit">Edit</button>
-<button class="hapus">Hapus</button>
-</td>`;
+  tbody.innerHTML = '';
+  data.forEach((r,i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.pasal}</td>
+      <td>${r.keterangan}</td>
+      <td>${r.hukuman}</td>
+      <td>${r.denda}</td>
+      <td>
+        <button class="edit">Edit</button>
+        <button class="hapus">Hapus</button>
+      </td>`;
 
+    tr.querySelector('.edit').addEventListener('click', () => edit(i));
+    tr.querySelector('.hapus').addEventListener('click', () => hapus(i));
 
-tr.querySelector('.edit').addEventListener('click', () => edit(i));
-tr.querySelector('.hapus').addEventListener('click', () => hapus(i));
-
-
-tbody.appendChild(tr);
-});
+    tbody.appendChild(tr);
+  });
 }
-
 
 function edit(i) {
-const r = data[i];
-pasal.value = r.pasal;
-keterangan.value = r.keterangan;
-hukuman.value = r.hukuman;
-denda.value = r.denda;
-editIndex = i;
+  const r = data[i];
+  pasal.value = r.pasal;
+  keterangan.value = r.keterangan;
+  hukuman.value = r.hukuman;
+  denda.value = r.denda;
+  editIndex = i;
 }
-
 
 function hapus(i) {
-data.splice(i,1);
-render();
+  data.splice(i,1);
+  render();
 }
-
 
 function simpan() {
-const obj = {
-pasal: pasal.value,
-keterangan: keterangan.value,
-hukuman: hukuman.value,
-denda: denda.value
-};
+  const obj = {
+    pasal: pasal.value,
+    keterangan: keterangan.value,
+    hukuman: hukuman.value,
+    denda: denda.value
+  };
 
+  if (editIndex !== null) {
+    data[editIndex] = obj;
+    editIndex = null;
+  } else {
+    data.push(obj);
+  }
 
-if (editIndex !== null) {
-data[editIndex] = obj;
-editIndex = null;
-} else {
-data.push(obj);
-}
-
-
-pasal.value = keterangan.value = hukuman.value = denda.value = '';
-render();
+  pasal.value = keterangan.value = hukuman.value = denda.value = '';
+  render();
 }
 </script>
 </body>
