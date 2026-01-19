@@ -1,177 +1,86 @@
 <!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UU Nasional Azeek</title>
-  <style>
-    body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0;padding:20px;color:#222}
-    h1{text-align:center;margin-bottom:5px}
-    p{text-align:center;color:#555}
-    .container{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
-    table{width:100%;border-collapse:collapse;margin-top:15px}
-    th,td{border:1px solid #ddd;padding:8px;font-size:14px}
-    th{text-align:center;background:#fafafa}
-    td.center{text-align:center}
-    button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer;font-size:13px}
-    .primary{background:#222;color:#fff}
-    .edit{background:#666;color:#fff}
-    .delete{background:#c0392b;color:#fff}
-    .reset{background:#999;color:#fff}
-    .form{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
-    input{padding:7px;border:1px solid #ccc;border-radius:4px}
-    .top-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
-    .hasil{margin-top:20px;background:#fafafa;padding:15px;border-radius:6px}
-    .hasil ul{margin:8px 0 0 18px}
-  </style>
-</head>
-<body>
-<div class="container">
-  <h1>UU Nasional Azeek</h1>
-  <p>Daftar Pasal & Perhitungan Hukuman</p>
+const lines = reader.result.split('\n').slice(1);
+data = [];
 
-  <div class="top-actions">
-    <input type="file" id="csvFile" accept=".csv" />
-    <button class="primary" onclick="importCSV()">Import CSV</button>
-    <button class="reset" onclick="resetHitung()">Reset Hitungan</button>
-  </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th>Pilih</th>
-        <th>Pasal</th>
-        <th>Deskripsi</th>
-        <th>Denda</th>
-        <th>Masa Tahanan (Bulan)</th>
-        <th>Aksi</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
+lines.forEach(l => {
+const [pasal,keterangan,hukuman,denda] = l.split(',');
+if (!pasal) return;
+data.push({
+pasal: pasal.trim(),
+keterangan: keterangan.trim(),
+hukuman: hukuman.trim(),
+denda: denda.trim()
+});
+});
 
-  <div class="hasil">
-    <strong>Pasal Terpilih:</strong>
-    <ul id="listPasal"></ul>
-    <p><strong>Total Denda:</strong> $<span id="totalDenda">0</span></p>
-    <p><strong>Total Masa Tahanan:</strong> <span id="totalHukuman">0</span> Bulan</p>
-  </div>
-
-  <h3>Tambah / Edit Pasal</h3>
-  <div class="form">
-    <input type="hidden" id="editIndex">
-    <input type="text" id="pasalInput" placeholder="Pasal">
-    <input type="text" id="deskInput" placeholder="Deskripsi">
-    <input type="text" id="dendaInput" placeholder="Denda (contoh: 5000)">
-    <input type="text" id="hukumanInput" placeholder="Masa Tahanan (Bulan)">
-    <button class="primary" onclick="simpan()">Simpan</button>
-  </div>
-</div>
-
-<script>
-let data = JSON.parse(localStorage.getItem('uuAzeek')) || [];
-
-function render(){
-  const tb=document.getElementById('tbody');tb.innerHTML='';
-  data.forEach((d,i)=>{
-    tb.innerHTML+=`<tr>
-      <td class="center"><input type="checkbox" onchange="hitung()" data-i="${i}"></td>
-      <td class="center">${d.pasal}</td>
-      <td>${d.deskripsi}</td>
-      <td class="center">$${d.denda}</td>
-      <td class="center">${d.hukuman} BULAN</td>
-      <td class="center">
-        <button class="edit" onclick="edit(${i})">Edit</button>
-        <button class="delete" onclick="hapus(${i})">Hapus</button>
-      </td>
-    </tr>`;
-  });
-  localStorage.setItem('uuAzeek',JSON.stringify(data));
-}
-
-function hitung(){
-  let totalD=0,totalH=0;
-  const list=document.getElementById('listPasal');
-  list.innerHTML='';
-  document.querySelectorAll('input[type=checkbox]').forEach(c=>{
-    if(c.checked){
-      const d=data[c.dataset.i];
-      totalD+=Number(d.denda);
-      totalH+=Number(d.hukuman);
-      const li=document.createElement('li');
-      li.textContent=`${d.pasal} – ${d.deskripsi}`;
-      list.appendChild(li);
-    }
-  });
-  totalDenda.innerText=totalD;
-  totalHukuman.innerText=totalH;
-}
-
-function resetHitung(){
-  document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
-  hitung();
-}
-
-function simpan(){
-  const obj={
-    pasal:pasalInput.value,
-    deskripsi:deskInput.value,
-    denda:Number(dendaInput.value.replace(/[^0-9]/g,'')),
-    hukuman:Number(hukumanInput.value.replace(/[^0-9]/g,''))
-  };
-  if(editIndex.value==='') data.push(obj);
-  else data[editIndex.value]=obj;
-  editIndex.value='';pasalInput.value=deskInput.value=dendaInput.value=hukumanInput.value='';
-  render();
-}
-
-function edit(index) {
-  if (index === undefined || data[index] === undefined) {
-    alert('Data tidak ditemukan');
-    return;
-  }
-
-  const row = data[index];
-
-  document.getElementById('pasal').value = row.pasal || '';
-  document.getElementById('keterangan').value = row.keterangan || '';
-  document.getElementById('hukuman').value = row.hukuman || '';
-  document.getElementById('denda').value = row.denda || '';
-
-  editIndex = index;
-}
-
-function hapus(i){ if(confirm('Hapus pasal ini?')){ data.splice(i,1); render(); hitung(); }}
-
-function importCSV(){
-  const file=document.getElementById('csvFile').files[0];
-  if(!file) return alert('Pilih file CSV terlebih dahulu');
-  const reader=new FileReader();
-  reader.onload=e=>{
-    const lines=e.target.result.split(/
-?
-/);
-    data=[];
-    for(let i=0;i<lines.length;i++){
-      if(!lines[i].trim()) continue;
-      const c=lines[i].split(',');
-      // Skip header CSV
-      if(c[0].toUpperCase().includes('PASAL')) continue;
-      if(c.length<4) continue;
-      data.push({
-        pasal:c[0].trim(),
-        deskripsi:c[1].trim(),
-        denda:parseInt(c[2].replace(/[^0-9]/g,''))||0,
-        hukuman:parseInt(c[3].replace(/[^0-9]/g,''))||0
-      });
-    }
-    render();
-    alert('Import CSV berhasil');
-  };
-  reader.readAsText(file);
-}
 
 render();
+};
+reader.readAsText(file);
+});
+
+
+function render() {
+tbody.innerHTML = '';
+data.forEach((r,i) => {
+const tr = document.createElement('tr');
+tr.innerHTML = `
+<td>${r.pasal}</td>
+<td>${r.keterangan}</td>
+<td>${r.hukuman}</td>
+<td>${r.denda}</td>
+<td>
+<button class="edit">Edit</button>
+<button class="hapus">Hapus</button>
+</td>`;
+
+
+tr.querySelector('.edit').addEventListener('click', () => edit(i));
+tr.querySelector('.hapus').addEventListener('click', () => hapus(i));
+
+
+tbody.appendChild(tr);
+});
+}
+
+
+function edit(i) {
+const r = data[i];
+pasal.value = r.pasal;
+keterangan.value = r.keterangan;
+hukuman.value = r.hukuman;
+denda.value = r.denda;
+editIndex = i;
+}
+
+
+function hapus(i) {
+data.splice(i,1);
+render();
+}
+
+
+function simpan() {
+const obj = {
+pasal: pasal.value,
+keterangan: keterangan.value,
+hukuman: hukuman.value,
+denda: denda.value
+};
+
+
+if (editIndex !== null) {
+data[editIndex] = obj;
+editIndex = null;
+} else {
+data.push(obj);
+}
+
+
+pasal.value = keterangan.value = hukuman.value = denda.value = '';
+render();
+}
 </script>
 </body>
 </html>
