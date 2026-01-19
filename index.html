@@ -47,115 +47,120 @@ button{padding:5px 10px;cursor:pointer;margin:2px}
 </div>
 
 <script>
-const tableBody=document.getElementById("tableBody");
-const totalTahananEl=document.getElementById("totalTahanan");
-const totalDendaEl=document.getElementById("totalDenda");
-const pasalTerpilihEl=document.getElementById("pasalTerpilih");
-const historyList=document.getElementById("historyList");
+const tableBody = document.getElementById('tableBody');
+const totalTahananEl = document.getElementById('totalTahanan');
+const totalDendaEl = document.getElementById('totalDenda');
+const pasalTerpilihEl = document.getElementById('pasalTerpilih');
+const historyList = document.getElementById('historyList');
+let histori = [];
 
-let histori=[];
+document.getElementById('csvFile').addEventListener('change', function (e) {
+  const file = e.target.files[0];
+  if (!file) return;
 
-document.getElementById("csvFile").addEventListener("change",function(e){
- const file=e.target.files[0];
- if(!file)return;
- const reader=new FileReader();
- reader.onload=function(ev){
-  const text=ev.target.result.replace(/\r/g,'');
-  const lines=text.split('\n').filter(l=>l.trim()!=='');
-  tableBody.innerHTML='';
-  for(let i=1;i<lines.length;i++){
-    const d=lines[i].split(',');
-    if(d.length<4) continue;
-    const row=document.createElement('tr');
-    row.innerHTML=`
-      <td><input type="checkbox" onchange="hitungTotal()"></td>
-      <td>${d[0]}</td>
-      <td>${d[1]}</td>
-      <td>${d[3]}</td>
-      <td>${d[2]}</td>
-      <td>
-        <button onclick="editRow(this)">Edit</button>
-        <button onclick="deleteRow(this)">Hapus</button>
-      </td>`;
-    tableBody.appendChild(row);
-  }
-};
-reader.readAsText(file);(file);
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    tableBody.innerHTML = '';
+
+    const text = ev.target.result
+      .replace(/
+/g, '')
+      .trim();
+
+    const lines = text.split('
+');
+    if (lines.length <= 1) return;
+
+    for (let i = 1; i < lines.length; i++) {
+      const rowData = lines[i].split(',');
+      if (rowData.length < 4) continue;
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" onchange="hitungTotal()"></td>
+        <td>${rowData[0]}</td>
+        <td>${rowData[1]}</td>
+        <td>${rowData[3]}</td>
+        <td>${rowData[2]}</td>
+        <td>
+          <button onclick="editRow(this)">Edit</button>
+          <button onclick="deleteRow(this)">Hapus</button>
+        </td>
+      `;
+      tableBody.appendChild(tr);
+    }
+  };
+  reader.readAsText(file);
 });
 
-function hitungTotal(){
- let totalTahanan=0;
- let totalDenda=0;
- let totalBulan=0;
- let pasal=[];
- document.querySelectorAll("#tableBody tr").forEach(r=>{
-  const cb=r.querySelector("input[type=checkbox]");
-  if(cb.checked){
-   totalTahanan++;
-   pasal.push(r.children[1].innerText);
+function hitungTotal() {
+  let totalTahanan = 0;
+  let totalDenda = 0;
+  let totalBulan = 0;
+  let pasal = [];
 
-   // DENDA ada simbol $, ambil angkanya saja
-   const dendaText=r.children[4].innerText;
-   const dendaAngka=parseInt(dendaText.replace(/[^0-9]/g,''))||0;
-   totalDenda+=dendaAngka;
+  document.querySelectorAll('#tableBody tr').forEach(r => {
+    const cb = r.querySelector('input[type=checkbox]');
+    if (!cb.checked) return;
 
-   // HUKUMAN ada teks BULAN, ambil angkanya saja
-   const hukumanText=r.children[3].innerText;
-   const bulan=parseInt(hukumanText.replace(/[^0-9]/g,''))||0;
-   totalBulan+=bulan;
+    totalTahanan++;
+    pasal.push(r.children[1].innerText);
+
+    const denda = r.children[4].innerText.replace(/[^0-9]/g, '');
+    totalDenda += parseInt(denda || '0');
+
+    const bulan = r.children[3].innerText.replace(/[^0-9]/g, '');
+    totalBulan += parseInt(bulan || '0');
+  });
+
+  totalTahananEl.innerText = totalTahanan;
+  totalDendaEl.innerText = '$' + totalDenda;
+  pasalTerpilihEl.innerText = pasal.join(', ') || '-';
+
+  let bulanEl = document.getElementById('totalBulan');
+  if (!bulanEl) {
+    const p = document.createElement('p');
+    p.innerHTML = '<b>Total Hukuman:</b> <span id="totalBulan">0</span> BULAN';
+    document.querySelector('.summary').appendChild(p);
+    bulanEl = document.getElementById('totalBulan');
   }
- });
- totalTahananEl.innerText=totalTahanan;
- totalDendaEl.innerText='$'+totalDenda;
- pasalTerpilihEl.innerText=pasal.join(", ")||"-";
-
- // tampilkan total bulan hukuman
- if(!document.getElementById('totalBulan')){
-  const p=document.createElement('p');
-  p.innerHTML='<b>Total Hukuman:</b> <span id="totalBulan">0</span> BULAN';
-  document.querySelector('.summary').appendChild(p);
- }
- document.getElementById('totalBulan').innerText=totalBulan;
-}
- });
- totalTahananEl.innerText=totalTahanan;
- totalDendaEl.innerText=totalDenda;
- pasalTerpilihEl.innerText=pasal.join(", ")||"-";
+  bulanEl.innerText = totalBulan;
 }
 
-function deleteRow(btn){btn.closest("tr").remove();hitungTotal();}
-
-function editRow(btn){
- const r=btn.closest("tr");
- const p=prompt("Pasal",r.children[1].innerText);
- const k=prompt("Keterangan",r.children[2].innerText);
- const h=prompt("Hukuman",r.children[3].innerText);
- const d=prompt("Denda",r.children[4].innerText);
- if(p!==null)r.children[1].innerText=p;
- if(k!==null)r.children[2].innerText=k;
- if(h!==null)r.children[3].innerText=h;
- if(d!==null)r.children[4].innerText=d;
- hitungTotal();
+function deleteRow(btn) {
+  btn.closest('tr').remove();
+  hitungTotal();
 }
 
-function simpanHistori(){
- const data={
-  tahanan:totalTahananEl.innerText,
-  denda:totalDendaEl.innerText,
-  pasal:pasalTerpilihEl.innerText,
-  waktu:new Date().toLocaleString()
- };
- histori.push(data);
- renderHistori();
+function editRow(btn) {
+  const r = btn.closest('tr');
+  const p = prompt('Pasal', r.children[1].innerText);
+  const k = prompt('Keterangan', r.children[2].innerText);
+  const h = prompt('Hukuman (BULAN)', r.children[3].innerText);
+  const d = prompt('Denda ($)', r.children[4].innerText);
+
+  if (p !== null) r.children[1].innerText = p;
+  if (k !== null) r.children[2].innerText = k;
+  if (h !== null) r.children[3].innerText = h;
+  if (d !== null) r.children[4].innerText = d;
+
+  hitungTotal();
 }
 
-function renderHistori(){
- historyList.innerHTML="";
- histori.forEach((h,i)=>{
-  const li=document.createElement("li");
-  li.innerText=`${i+1}. [${h.waktu}] Tahanan: ${h.tahanan}, Denda: ${h.denda}, Pasal: ${h.pasal}`;
-  historyList.appendChild(li);
- });
+function simpanHistori() {
+  histori.push({
+    waktu: new Date().toLocaleString(),
+    tahanan: totalTahananEl.innerText,
+    denda: totalDendaEl.innerText,
+    pasal: pasalTerpilihEl.innerText
+  });
+
+  historyList.innerHTML = '';
+  histori.forEach((h, i) => {
+    const li = document.createElement('li');
+    li.textContent = `${i + 1}. [${h.waktu}] Tahanan: ${h.tahanan}, Denda: ${h.denda}, Pasal: ${h.pasal}`;
+    historyList.appendChild(li);
+  });
 }
 </script>
 
