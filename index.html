@@ -60,26 +60,27 @@ document.getElementById("csvFile").addEventListener("change",function(e){
  if(!file)return;
  const reader=new FileReader();
  reader.onload=function(ev){
-  const lines=ev.target.result.trim().split("\n");
-  tableBody.innerHTML="";
+  const text=ev.target.result.replace(/\r/g,'');
+  const lines=text.split('\n').filter(l=>l.trim()!=='');
+  tableBody.innerHTML='';
   for(let i=1;i<lines.length;i++){
-   const d=lines[i].split(",");
-   if(d.length<4)continue;
-   const row=document.createElement("tr");
-   row.innerHTML=`
-    <td><input type="checkbox" onchange="hitungTotal()"></td>
-    <td>${d[0]}</td>
-    <td>${d[1]}</td>
-    <td>${d[3]}</td>
-    <td>${d[2]}</td>
-    <td>
-     <button onclick="editRow(this)">Edit</button>
-     <button onclick="deleteRow(this)">Hapus</button>
-    </td>`;
-   tableBody.appendChild(row);
+    const d=lines[i].split(',');
+    if(d.length<4) continue;
+    const row=document.createElement('tr');
+    row.innerHTML=`
+      <td><input type="checkbox" onchange="hitungTotal()"></td>
+      <td>${d[0]}</td>
+      <td>${d[1]}</td>
+      <td>${d[3]}</td>
+      <td>${d[2]}</td>
+      <td>
+        <button onclick="editRow(this)">Edit</button>
+        <button onclick="deleteRow(this)">Hapus</button>
+      </td>`;
+    tableBody.appendChild(row);
   }
- };
- reader.readAsText(file);
+};
+reader.readAsText(file);(file);
 });
 
 function hitungTotal(){
