@@ -85,14 +85,37 @@ document.getElementById("csvFile").addEventListener("change",function(e){
 function hitungTotal(){
  let totalTahanan=0;
  let totalDenda=0;
+ let totalBulan=0;
  let pasal=[];
  document.querySelectorAll("#tableBody tr").forEach(r=>{
   const cb=r.querySelector("input[type=checkbox]");
   if(cb.checked){
    totalTahanan++;
-   totalDenda+=parseInt(r.children[4].innerText)||0;
    pasal.push(r.children[1].innerText);
+
+   // DENDA ada simbol $, ambil angkanya saja
+   const dendaText=r.children[4].innerText;
+   const dendaAngka=parseInt(dendaText.replace(/[^0-9]/g,''))||0;
+   totalDenda+=dendaAngka;
+
+   // HUKUMAN ada teks BULAN, ambil angkanya saja
+   const hukumanText=r.children[3].innerText;
+   const bulan=parseInt(hukumanText.replace(/[^0-9]/g,''))||0;
+   totalBulan+=bulan;
   }
+ });
+ totalTahananEl.innerText=totalTahanan;
+ totalDendaEl.innerText='$'+totalDenda;
+ pasalTerpilihEl.innerText=pasal.join(", ")||"-";
+
+ // tampilkan total bulan hukuman
+ if(!document.getElementById('totalBulan')){
+  const p=document.createElement('p');
+  p.innerHTML='<b>Total Hukuman:</b> <span id="totalBulan">0</span> BULAN';
+  document.querySelector('.summary').appendChild(p);
+ }
+ document.getElementById('totalBulan').innerText=totalBulan;
+}
  });
  totalTahananEl.innerText=totalTahanan;
  totalDendaEl.innerText=totalDenda;
