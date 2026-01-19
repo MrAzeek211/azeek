@@ -2,143 +2,111 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Azeek Law System</title>
+<title>UU Nasional Azeek</title>
+
 <style>
-body{font-family:Arial,Helvetica,sans-serif;background:#f2f2f2;padding:20px}
-h2,h3{margin:10px 0}
-table{width:100%;border-collapse:collapse;background:#fff}
-th,td{border:1px solid #ccc;padding:8px;text-align:center}
-th{background:#222;color:#fff}
-button{padding:4px 10px;margin:2px;cursor:pointer}
-.summary,.history{background:#fff;padding:10px;margin-top:15px;border:1px solid #ccc}
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+}
+th {
+  background: #f2f2f2;
+}
 </style>
 </head>
+
 <body>
 
 <h2>UU Nasional Azeek</h2>
-<input type="file" id="csvFile" accept=".csv">
 
 <table>
 <thead>
 <tr>
-<th>Pilih</th>
-<th>Pasal</th>
-<th>Keterangan</th>
-<th>Hukuman (Bulan)</th>
-<th>Denda ($)</th>
-<th>Aksi</th>
+  <th>Pilih</th>
+  <th>Pasal</th>
+  <th>Deskripsi</th>
+  <th>Denda</th>
+  <th>Hukuman</th>
 </tr>
 </thead>
-<tbody id="tableBody"></tbody>
+<tbody id="dataPasal"></tbody>
 </table>
 
-<div class="summary">
 <h3>Ringkasan</h3>
-<p>Total Tahanan: <span id="totalTahanan">0</span></p>
-<p>Total Hukuman: <span id="totalBulan">0</span> BULAN</p>
-<p>Total Denda: <span id="totalDenda">$0</span></p>
-<p>Pasal Terpilih: <span id="pasalTerpilih">-</span></p>
-<button onclick="simpanHistori()">Simpan Histori</button>
-</div>
-
-<div class="history">
-<h3>Histori</h3>
-<ul id="historyList"></ul>
-</div>
+<p><b>Pasal Terpilih:</b> <span id="pasalList">-</span></p>
+<p><b>Total Hukuman:</b> <span id="totalBulan">0</span> BULAN</p>
+<p><b>Total Denda:</b> $<span id="totalDenda">0</span></p>
 
 <script>
-const tableBody = document.getElementById('tableBody');
-const totalTahananEl = document.getElementById('totalTahanan');
-const totalBulanEl = document.getElementById('totalBulan');
-const totalDendaEl = document.getElementById('totalDenda');
-const pasalTerpilihEl = document.getElementById('pasalTerpilih');
-const historyList = document.getElementById('historyList');
+let data = [];
 
-let histori = [];
+fetch("uu_nasional.csv")
+  .then(res => {
+    if (!res.ok) throw new Error("CSV tidak ditemukan");
+    return res.text();
+  })
+  .then(text => {
+    const rows = text.trim().split("\n").slice(1);
 
-document.getElementById('csvFile').addEventListener('change', function(e){
-  const file = e.target.files[0];
-  if(!file) return;
+    rows.forEach(row => {
+      const c = row.split(",");
 
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    const text = ev.target.result.replace(/\r/g,'');
-    const lines = text.split('\n').filter(l => l.trim() !== '');
-    tableBody.innerHTML = '';
+      data.push({
+        pasal: c[0],
+        deskripsi: c[1],
+        denda: parseInt(c[2].replace("$","")),
+        bulan: parseInt(c[3].replace(" BULAN",""))
+      });
+    });
 
-    for(let i=1;i<lines.length;i++){
-      const c = lines[i].split(',');
-      if(c.length < 4) continue;
+    render();
+  })
+  .catch(err => {
+    document.body.innerHTML += "<p style='color:red'>Gagal load CSV</p>";
+  });
 
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><input type="checkbox" onchange="hitungTotal()"></td>
-        <td>${c[0]}</td>
-        <td>${c[1]}</td>
-        <td>${c[3]}</td>
-        <td>${c[2]}</td>
-        <td>
-          <button onclick="editRow(this)">Edit</button>
-          <button onclick="hapusRow(this)">Hapus</button>
-        </td>`;
-      tableBody.appendChild(tr);
-    }
-  };
-  reader.readAsText(file);
-});
+function render() {
+  const tbody = document.getElementById("dataPasal");
+  tbody.innerHTML = "";
 
-function hitungTotal(){
-  let tahanan = 0;
-  let bulan = 0;
-  let denda = 0;
+  data.forEach((d, i) => {
+    tbody.innerHTML += `
+      <tr>
+        <td><input type="checkbox" onchange="hitung()"></td>
+        <td>${d.pasal}</td>
+        <td>${d.deskripsi}</td>
+        <td>$${d.denda}</td>
+        <td>${d.bulan} BULAN</td>
+      </tr>
+    `;
+  });
+}
+
+function hitung() {
+  let totalBulan = 0;
+  let totalDenda = 0;
   let pasal = [];
 
-  document.querySelectorAll('#tableBody tr').forEach(r=>{
-    const cb = r.querySelector('input');
-    if(!cb.checked) return;
-
-    tahanan++;
-    pasal.push(r.children[1].innerText);
-
-    bulan += parseInt(r.children[3].innerText.replace(/[^0-9]/g,'')) || 0;
-    denda += parseInt(r.children[4].innerText.replace(/[^0-9]/g,'')) || 0;
+  document.querySelectorAll("tbody tr").forEach((row, i) => {
+    if (row.querySelector("input").checked) {
+      totalBulan += data[i].bulan;
+      totalDenda += data[i].denda;
+      pasal.push(data[i].pasal);
+    }
   });
 
-  totalTahananEl.innerText = tahanan;
-  totalBulanEl.innerText = bulan;
-  totalDendaEl.innerText = '$' + denda;
-  pasalTerpilihEl.innerText = pasal.join(', ') || '-';
-}
-
-function editRow(btn){
-  const r = btn.closest('tr');
-  r.children[1].innerText = prompt('Pasal', r.children[1].innerText) || r.children[1].innerText;
-  r.children[2].innerText = prompt('Keterangan', r.children[2].innerText) || r.children[2].innerText;
-  r.children[3].innerText = prompt('Hukuman (BULAN)', r.children[3].innerText) || r.children[3].innerText;
-  r.children[4].innerText = prompt('Denda ($)', r.children[4].innerText) || r.children[4].innerText;
-  hitungTotal();
-}
-
-function hapusRow(btn){
-  btn.closest('tr').remove();
-  hitungTotal();
-}
-
-function simpanHistori(){
-  histori.push({
-    waktu:new Date().toLocaleString(),
-    tahanan: totalTahananEl.innerText,
-    bulan: totalBulanEl.innerText,
-    denda: totalDendaEl.innerText,
-    pasal: pasalTerpilihEl.innerText
-  });
-
-  historyList.innerHTML = '';
-  histori.forEach((h,i)=>{
-    const li = document.createElement('li');
-    li.textContent = `${i+1}. [${h.waktu}] ${h.pasal} | ${h.bulan} BULAN | ${h.denda}`;
-    historyList.appendChild(li);
-  });
+  document.getElementById("totalBulan").textContent = totalBulan;
+  document.getElementById("totalDenda").textContent = totalDenda;
+  document.getElementById("pasalList").textContent =
+    pasal.length ? pasal.join(", ") : "-";
 }
 </script>
 
