@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UU Nasional Azeek</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;margin:0;padding:20px;color:#222}
+    h1{text-align:center;margin-bottom:5px}
+    p{text-align:center;color:#555}
+    .container{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
+    table{width:100%;border-collapse:collapse;margin-top:15px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px}
+    th{background:#fafafa}
+    button{padding:6px 10px;border:none;border-radius:4px;cursor:pointer;font-size:13px}
+    .primary{background:#222;color:#fff}
+    .edit{background:#666;color:#fff}
+    .delete{background:#c0392b;color:#fff}
+    .reset{background:#999;color:#fff;margin-top:10px}
+    .form{margin-top:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px}
+    input{padding:7px;border:1px solid #ccc;border-radius:4px}
+    .total{margin-top:15px;font-weight:bold}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>UU Nasional Azeek</h1>
+  <p>Peraturan & Perhitungan Hukuman</p>
+
+  <div class="top-actions">
+    <input type="file" id="csvFile" accept=".csv" />
+    <button class="primary" onclick="importCSV()">Import CSV</button>
+    <button class="reset" onclick="resetHitung()">Reset Hitungan</button>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Pilih</th>
+        <th>Pasal</th>
+        <th>Keterangan</th>
+        <th>Hukuman (Bulan)</th>
+        <th>Denda</th>
+        <th>Aksi</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <div class="total">
+    Total Hukuman: <span id="totalHukuman">0</span> Bulan<br>
+    Total Denda: $<span id="totalDenda">0</span>
+  </div>
+
+  <h3>Tambah / Edit Pasal</h3>
+  <div class="form">
+    <input type="hidden" id="editIndex">
+    <input type="text" id="pasalInput" placeholder="Pasal">
+    <input type="text" id="ketInput" placeholder="Keterangan">
+    <input type="number" id="hukumanInput" placeholder="Hukuman (Bulan)">
+    <input type="number" id="dendaInput" placeholder="Denda">
+    <button class="primary" onclick="simpan()">Simpan</button>
+  </div>
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem('uuAzeek')) || [];
+
+function render(){
+  const tb=document.getElementById('tbody');tb.innerHTML='';
+  data.forEach((d,i)=>{
+    tb.innerHTML+=`<tr>
+      <td><input type="checkbox" onchange="hitung()" data-i="${i}"></td>
+      <td>${d.pasal}</td>
+      <td>${d.ket}</td>
+      <td>${d.hukuman}</td>
+      <td>${d.denda}</td>
+      <td>
+        <button class="edit" onclick="edit(${i})">Edit</button>
+        <button class="delete" onclick="hapus(${i})">Hapus</button>
+      </td>
+    </tr>`;
+  });
+  localStorage.setItem('uuAzeek',JSON.stringify(data));
+}
+
+function hitung(){
+  let h=0,d=0;
+  document.querySelectorAll('input[type=checkbox]').forEach(c=>{
+    if(c.checked){
+      const x=data[c.dataset.i];
+      h+=Number(x.hukuman);d+=Number(x.denda);
+    }
+  });
+  totalHukuman.innerText=h;totalDenda.innerText=d;
+}
+
+function resetHitung(){
+  document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+  hitung();
+}
+
+function simpan(){
+  const obj={
+    pasal:pasalInput.value,
+    ket:ketInput.value,
+    hukuman:Number(hukumanInput.value),
+    denda:Number(dendaInput.value)
+  };
+  if(editIndex.value==='') data.push(obj);
+  else data[editIndex.value]=obj;
+  editIndex.value='';pasalInput.value=ketInput.value=hukumanInput.value=dendaInput.value='';
+  render();
+}
+
+function edit(i){
+  const d=data[i];editIndex.value=i;
+  pasalInput.value=d.pasal;ketInput.value=d.ket;
+  hukumanInput.value=d.hukuman;dendaInput.value=d.denda;
+}
+
+function hapus(i){ if(confirm('Hapus pasal ini?')){ data.splice(i,1); render(); hitung(); }}
+
+function importCSV(){
+  const file=document.getElementById('csvFile').files[0];
+  if(!file) return alert('Pilih file CSV terlebih dahulu');
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split(/\r?\n/);
+    data=[];
+    for(let i=1;i<lines.length;i++){
+      const c=lines[i].split(',');
+      if(c.length<4) continue;
+      const pasal=c[0].trim();
+      const ket=c[1].trim();
+      const denda=parseInt(c[2].replace(/[^0-9]/g,''))||0;
+      const hukuman=parseInt(c[3].replace(/[^0-9]/g,''))||0;
+      data.push({pasal,ket,hukuman,denda});
+    }
+    render();alert('Import CSV berhasil');
+  };
+  reader.readAsText(file);
+}
+
+render();
+</script>
+</body>
+</html>
