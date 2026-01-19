@@ -4,116 +4,134 @@
 <meta charset="UTF-8">
 <title>Data Pasal</title>
 <style>
-body {
-    font-family: Arial, sans-serif;
-    background: #f5f5f5;
-    padding: 20px;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: white;
-}
-
-th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-    text-align: center;
-}
-
-th {
-    background: #222;
-    color: white;
-}
-
-button {
-    padding: 5px 10px;
-    cursor: pointer;
-}
+body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}
+h2,h3{margin-top:20px}
+table{width:100%;border-collapse:collapse;background:#fff;margin-top:10px}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+th{background:#222;color:#fff}
+button{padding:5px 10px;cursor:pointer;margin:2px}
+.summary{background:#fff;padding:10px;border:1px solid #ccc;margin-top:15px}
+.history{background:#fff;padding:10px;border:1px solid #ccc;margin-top:15px;max-height:200px;overflow:auto}
 </style>
 </head>
 <body>
 
 <h2>Data Pasal</h2>
-
 <input type="file" id="csvFile" accept=".csv">
-<br><br>
 
 <table>
 <thead>
 <tr>
-    <th>Pilih</th>
-    <th>Pasal</th>
-    <th>Keterangan</th>
-    <th>Hukuman</th>
-    <th>Denda</th>
-    <th>Aksi</th>
+<th>Pilih</th>
+<th>Pasal</th>
+<th>Keterangan</th>
+<th>Hukuman</th>
+<th>Denda</th>
+<th>Aksi</th>
 </tr>
 </thead>
 <tbody id="tableBody"></tbody>
 </table>
 
+<div class="summary">
+<h3>Ringkasan</h3>
+<p><b>Total Tahanan:</b> <span id="totalTahanan">0</span></p>
+<p><b>Total Denda:</b> <span id="totalDenda">0</span></p>
+<p><b>Pasal Terpilih:</b> <span id="pasalTerpilih">-</span></p>
+<button onclick="simpanHistori()">Simpan ke Histori</button>
+</div>
+
+<div class="history">
+<h3>Histori Pelanggaran</h3>
+<ul id="historyList"></ul>
+</div>
+
 <script>
-const tableBody = document.getElementById("tableBody");
+const tableBody=document.getElementById("tableBody");
+const totalTahananEl=document.getElementById("totalTahanan");
+const totalDendaEl=document.getElementById("totalDenda");
+const pasalTerpilihEl=document.getElementById("pasalTerpilih");
+const historyList=document.getElementById("historyList");
 
-document.getElementById("csvFile").addEventListener("change", function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
+let histori=[];
 
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const lines = event.target.result.trim().split("\n");
-        tableBody.innerHTML = "";
-
-        // skip header (index 0)
-        for (let i = 1; i < lines.length; i++) {
-            const data = lines[i].split(",");
-
-            if (data.length < 4) continue;
-
-            const pasal = data[0];
-            const keterangan = data[1];
-            const hukuman = data[2];
-            const denda = data[3];
-
-            const row = document.createElement("tr");
-
-            row.innerHTML = `
-                <td><input type="checkbox"></td>
-                <td>${pasal}</td>
-                <td>${keterangan}</td>
-                <td>${hukuman}</td>
-                <td>${denda}</td>
-                <td>
-                    <button onclick="editRow(this)">Edit</button>
-                    <button onclick="deleteRow(this)">Hapus</button>
-                </td>
-            `;
-
-            tableBody.appendChild(row);
-        }
-    };
-    reader.readAsText(file);
+document.getElementById("csvFile").addEventListener("change",function(e){
+ const file=e.target.files[0];
+ if(!file)return;
+ const reader=new FileReader();
+ reader.onload=function(ev){
+  const lines=ev.target.result.trim().split("\n");
+  tableBody.innerHTML="";
+  for(let i=1;i<lines.length;i++){
+   const d=lines[i].split(",");
+   if(d.length<4)continue;
+   const row=document.createElement("tr");
+   row.innerHTML=`
+    <td><input type="checkbox" onchange="hitungTotal()"></td>
+    <td>${d[0]}</td>
+    <td>${d[1]}</td>
+    <td>${d[2]}</td>
+    <td>${d[3]}</td>
+    <td>
+     <button onclick="editRow(this)">Edit</button>
+     <button onclick="deleteRow(this)">Hapus</button>
+    </td>`;
+   tableBody.appendChild(row);
+  }
+ };
+ reader.readAsText(file);
 });
 
-function deleteRow(btn) {
-    btn.closest("tr").remove();
+function hitungTotal(){
+ let totalTahanan=0;
+ let totalDenda=0;
+ let pasal=[];
+ document.querySelectorAll("#tableBody tr").forEach(r=>{
+  const cb=r.querySelector("input[type=checkbox]");
+  if(cb.checked){
+   totalTahanan++;
+   totalDenda+=parseInt(r.children[4].innerText)||0;
+   pasal.push(r.children[1].innerText);
+  }
+ });
+ totalTahananEl.innerText=totalTahanan;
+ totalDendaEl.innerText=totalDenda;
+ pasalTerpilihEl.innerText=pasal.join(", ")||"-";
 }
 
-function editRow(btn) {
-    const row = btn.closest("tr");
-    const cells = row.querySelectorAll("td");
+function deleteRow(btn){btn.closest("tr").remove();hitungTotal();}
 
-    const pasal = prompt("Edit Pasal:", cells[1].innerText);
-    const ket = prompt("Edit Keterangan:", cells[2].innerText);
-    const huk = prompt("Edit Hukuman:", cells[3].innerText);
-    const den = prompt("Edit Denda:", cells[4].innerText);
+function editRow(btn){
+ const r=btn.closest("tr");
+ const p=prompt("Pasal",r.children[1].innerText);
+ const k=prompt("Keterangan",r.children[2].innerText);
+ const h=prompt("Hukuman",r.children[3].innerText);
+ const d=prompt("Denda",r.children[4].innerText);
+ if(p!==null)r.children[1].innerText=p;
+ if(k!==null)r.children[2].innerText=k;
+ if(h!==null)r.children[3].innerText=h;
+ if(d!==null)r.children[4].innerText=d;
+ hitungTotal();
+}
 
-    if (pasal !== null) cells[1].innerText = pasal;
-    if (ket !== null) cells[2].innerText = ket;
-    if (huk !== null) cells[3].innerText = huk;
-    if (den !== null) cells[4].innerText = den;
+function simpanHistori(){
+ const data={
+  tahanan:totalTahananEl.innerText,
+  denda:totalDendaEl.innerText,
+  pasal:pasalTerpilihEl.innerText,
+  waktu:new Date().toLocaleString()
+ };
+ histori.push(data);
+ renderHistori();
+}
+
+function renderHistori(){
+ historyList.innerHTML="";
+ histori.forEach((h,i)=>{
+  const li=document.createElement("li");
+  li.innerText=`${i+1}. [${h.waktu}] Tahanan: ${h.tahanan}, Denda: ${h.denda}, Pasal: ${h.pasal}`;
+  historyList.appendChild(li);
+ });
 }
 </script>
 
