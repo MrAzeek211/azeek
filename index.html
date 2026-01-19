@@ -2,21 +2,20 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Data Pasal</title>
+<title>Azeek Law System</title>
 <style>
-body{font-family:Arial,sans-serif;background:#f5f5f5;padding:20px}
-h2,h3{margin-top:20px}
-table{width:100%;border-collapse:collapse;background:#fff;margin-top:10px}
+body{font-family:Arial,Helvetica,sans-serif;background:#f2f2f2;padding:20px}
+h2,h3{margin:10px 0}
+table{width:100%;border-collapse:collapse;background:#fff}
 th,td{border:1px solid #ccc;padding:8px;text-align:center}
 th{background:#222;color:#fff}
-button{padding:5px 10px;cursor:pointer;margin:2px}
-.summary{background:#fff;padding:10px;border:1px solid #ccc;margin-top:15px}
-.history{background:#fff;padding:10px;border:1px solid #ccc;margin-top:15px;max-height:200px;overflow:auto}
+button{padding:4px 10px;margin:2px;cursor:pointer}
+.summary,.history{background:#fff;padding:10px;margin-top:15px;border:1px solid #ccc}
 </style>
 </head>
 <body>
 
-<h2>Data Pasal</h2>
+<h2>UU Nasional Azeek</h2>
 <input type="file" id="csvFile" accept=".csv">
 
 <table>
@@ -25,8 +24,8 @@ button{padding:5px 10px;cursor:pointer;margin:2px}
 <th>Pilih</th>
 <th>Pasal</th>
 <th>Keterangan</th>
-<th>Hukuman</th>
-<th>Denda</th>
+<th>Hukuman (Bulan)</th>
+<th>Denda ($)</th>
 <th>Aksi</th>
 </tr>
 </thead>
@@ -35,130 +34,109 @@ button{padding:5px 10px;cursor:pointer;margin:2px}
 
 <div class="summary">
 <h3>Ringkasan</h3>
-<p><b>Total Tahanan:</b> <span id="totalTahanan">0</span></p>
-<p><b>Total Denda:</b> <span id="totalDenda">0</span></p>
-<p><b>Pasal Terpilih:</b> <span id="pasalTerpilih">-</span></p>
-<button onclick="simpanHistori()">Simpan ke Histori</button>
+<p>Total Tahanan: <span id="totalTahanan">0</span></p>
+<p>Total Hukuman: <span id="totalBulan">0</span> BULAN</p>
+<p>Total Denda: <span id="totalDenda">$0</span></p>
+<p>Pasal Terpilih: <span id="pasalTerpilih">-</span></p>
+<button onclick="simpanHistori()">Simpan Histori</button>
 </div>
 
 <div class="history">
-<h3>Histori Pelanggaran</h3>
+<h3>Histori</h3>
 <ul id="historyList"></ul>
 </div>
 
 <script>
 const tableBody = document.getElementById('tableBody');
 const totalTahananEl = document.getElementById('totalTahanan');
+const totalBulanEl = document.getElementById('totalBulan');
 const totalDendaEl = document.getElementById('totalDenda');
 const pasalTerpilihEl = document.getElementById('pasalTerpilih');
 const historyList = document.getElementById('historyList');
+
 let histori = [];
 
-document.getElementById('csvFile').addEventListener('change', function (e) {
+document.getElementById('csvFile').addEventListener('change', function(e){
   const file = e.target.files[0];
-  if (!file) return;
+  if(!file) return;
 
   const reader = new FileReader();
-  reader.onload = function (ev) {
+  reader.onload = function(ev){
+    const text = ev.target.result.replace(/\r/g,'');
+    const lines = text.split('\n').filter(l => l.trim() !== '');
     tableBody.innerHTML = '';
 
-    const text = ev.target.result
-      .replace(/
-/g, '')
-      .trim();
-
-    const lines = text.split('
-');
-    if (lines.length <= 1) return;
-
-    for (let i = 1; i < lines.length; i++) {
-      const rowData = lines[i].split(',');
-      if (rowData.length < 4) continue;
+    for(let i=1;i<lines.length;i++){
+      const c = lines[i].split(',');
+      if(c.length < 4) continue;
 
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td><input type="checkbox" onchange="hitungTotal()"></td>
-        <td>${rowData[0]}</td>
-        <td>${rowData[1]}</td>
-        <td>${rowData[3]}</td>
-        <td>${rowData[2]}</td>
+        <td>${c[0]}</td>
+        <td>${c[1]}</td>
+        <td>${c[3]}</td>
+        <td>${c[2]}</td>
         <td>
           <button onclick="editRow(this)">Edit</button>
-          <button onclick="deleteRow(this)">Hapus</button>
-        </td>
-      `;
+          <button onclick="hapusRow(this)">Hapus</button>
+        </td>`;
       tableBody.appendChild(tr);
     }
   };
   reader.readAsText(file);
 });
 
-function hitungTotal() {
-  let totalTahanan = 0;
-  let totalDenda = 0;
-  let totalBulan = 0;
+function hitungTotal(){
+  let tahanan = 0;
+  let bulan = 0;
+  let denda = 0;
   let pasal = [];
 
-  document.querySelectorAll('#tableBody tr').forEach(r => {
-    const cb = r.querySelector('input[type=checkbox]');
-    if (!cb.checked) return;
+  document.querySelectorAll('#tableBody tr').forEach(r=>{
+    const cb = r.querySelector('input');
+    if(!cb.checked) return;
 
-    totalTahanan++;
+    tahanan++;
     pasal.push(r.children[1].innerText);
 
-    const denda = r.children[4].innerText.replace(/[^0-9]/g, '');
-    totalDenda += parseInt(denda || '0');
-
-    const bulan = r.children[3].innerText.replace(/[^0-9]/g, '');
-    totalBulan += parseInt(bulan || '0');
+    bulan += parseInt(r.children[3].innerText.replace(/[^0-9]/g,'')) || 0;
+    denda += parseInt(r.children[4].innerText.replace(/[^0-9]/g,'')) || 0;
   });
 
-  totalTahananEl.innerText = totalTahanan;
-  totalDendaEl.innerText = '$' + totalDenda;
+  totalTahananEl.innerText = tahanan;
+  totalBulanEl.innerText = bulan;
+  totalDendaEl.innerText = '$' + denda;
   pasalTerpilihEl.innerText = pasal.join(', ') || '-';
-
-  let bulanEl = document.getElementById('totalBulan');
-  if (!bulanEl) {
-    const p = document.createElement('p');
-    p.innerHTML = '<b>Total Hukuman:</b> <span id="totalBulan">0</span> BULAN';
-    document.querySelector('.summary').appendChild(p);
-    bulanEl = document.getElementById('totalBulan');
-  }
-  bulanEl.innerText = totalBulan;
 }
 
-function deleteRow(btn) {
+function editRow(btn){
+  const r = btn.closest('tr');
+  r.children[1].innerText = prompt('Pasal', r.children[1].innerText) || r.children[1].innerText;
+  r.children[2].innerText = prompt('Keterangan', r.children[2].innerText) || r.children[2].innerText;
+  r.children[3].innerText = prompt('Hukuman (BULAN)', r.children[3].innerText) || r.children[3].innerText;
+  r.children[4].innerText = prompt('Denda ($)', r.children[4].innerText) || r.children[4].innerText;
+  hitungTotal();
+}
+
+function hapusRow(btn){
   btn.closest('tr').remove();
   hitungTotal();
 }
 
-function editRow(btn) {
-  const r = btn.closest('tr');
-  const p = prompt('Pasal', r.children[1].innerText);
-  const k = prompt('Keterangan', r.children[2].innerText);
-  const h = prompt('Hukuman (BULAN)', r.children[3].innerText);
-  const d = prompt('Denda ($)', r.children[4].innerText);
-
-  if (p !== null) r.children[1].innerText = p;
-  if (k !== null) r.children[2].innerText = k;
-  if (h !== null) r.children[3].innerText = h;
-  if (d !== null) r.children[4].innerText = d;
-
-  hitungTotal();
-}
-
-function simpanHistori() {
+function simpanHistori(){
   histori.push({
-    waktu: new Date().toLocaleString(),
+    waktu:new Date().toLocaleString(),
     tahanan: totalTahananEl.innerText,
+    bulan: totalBulanEl.innerText,
     denda: totalDendaEl.innerText,
     pasal: pasalTerpilihEl.innerText
   });
 
   historyList.innerHTML = '';
-  histori.forEach((h, i) => {
+  histori.forEach((h,i)=>{
     const li = document.createElement('li');
-    li.textContent = `${i + 1}. [${h.waktu}] Tahanan: ${h.tahanan}, Denda: ${h.denda}, Pasal: ${h.pasal}`;
+    li.textContent = `${i+1}. [${h.waktu}] ${h.pasal} | ${h.bulan} BULAN | ${h.denda}`;
     historyList.appendChild(li);
   });
 }
